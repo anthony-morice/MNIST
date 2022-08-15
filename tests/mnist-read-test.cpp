@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 #include "mnist.h"
 
 int main(int argc, char** argv) {

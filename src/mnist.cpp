@@ -6,6 +6,9 @@
 #include <byteswap.h>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/highgui.hpp>
+#include <cstdlib>
+#include <ctime>
+#include <numeric>
 
 void Mnist::read_img_file(std::string path) {
   int magic, num_images, num_rows, num_columns;
@@ -93,3 +96,32 @@ std::vector<int> Mnist::get_onehot(int i) {
   v.at((int) this->labels[i]) = 1;
   return v;
 } // get_onehot()
+
+std::vector<std::vector<int>> Mnist::get_mini_batches(int batch_size) {
+  std::srand(std::time(nullptr));
+  std::vector<int> v(this->imgs.size());
+  std::iota(v.begin(), v.end(), 0);
+  // randomly permute vector 
+  for (int i = v.size() - 1; i >= 1; i--) {
+    int rn = std::rand() % i;
+    std::swap(v.at(rn), v.at(i));
+  } // for
+  // construct mini batches
+  std::vector<std::vector<int>> mbs;
+  int i = 0;
+  while (i + batch_size < (int) v.size()) {
+    std::vector<int> mini_batch(batch_size);
+    for (int j = 0; j < batch_size; j++)
+      mini_batch[j] = v[i + j];
+    i += batch_size;
+    mbs.push_back(mini_batch);
+  } // while
+  // add a partial mini batch if training size not evenly divisible by batch size
+  if (i < (int) v.size()) {
+    std::vector<int> mini_batch;
+    while (i < (int) v.size())
+      mini_batch.push_back(v[i++]);
+    mbs.push_back(mini_batch);
+  } // if
+  return mbs;
+} // get_mini_batches()

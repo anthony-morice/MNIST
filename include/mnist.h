@@ -15,6 +15,7 @@ class Mnist {
     void read_img_file(std::string path);
     void read_label_file(std::string path);
     std::vector<int> get_onehot(int i);
+    std::vector<std::vector<int>> get_mini_batches(int batch_size);
     void view();
 
   private:
