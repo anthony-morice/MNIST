@@ -11,15 +11,16 @@
 
 class Mnist {
   public:
-    Mnist(std::string train_imgs, std::string train_labels,
-          std::string test_imgs, std::string test_labels);
-    ~Mnist();
-    
+    Mnist(std::string imgs_path, std::string labels_path, int num_classes = 10);
+    void read_img_file(std::string path);
+    void read_label_file(std::string path);
+    std::vector<int> get_onehot(int i);
+    void view();
+
   private:
-    std::vector<cv::Mat> train_imgs;
-    std::vector<unsigned char> train_labels;
-    std::vector<cv::Mat> test_imgs;
-    std::vector<unsigned char> test_labels;
+    int num_classes;
+    std::vector<cv::Mat> imgs;
+    std::vector<unsigned char> labels;
 };
 
 #endif // MNIST_H_
