@@ -1,13 +1,15 @@
-# Build instructions
+MNIST training and test image/label parsing for machine learning projects.
+
+## Build instructions
 ```
 mkdir build
 cd build
 cmake ..
 cmake --build .
-./test-mnist-read ../dataset/train-images.idx3-ubyte ../dataset/train-labels.idx1-ubyte ../dataset/t10k-images.idx3-ubyte ../dataset/t10k-labels.idx1-ubyte
+./test-mnist-read <path-to-MNIST-image-file> <path-to-MNIST-label-file>
 ```
 
-# Recompile after changes
+## Recompile after changes
 ```
 cd build
 cmake --build .
