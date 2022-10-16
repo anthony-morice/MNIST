@@ -2,6 +2,8 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <string>
+#include <utility>
 #include <cassert>
 #include <byteswap.h>
 #include <opencv2/core/mat.hpp>
@@ -31,6 +33,8 @@ void Mnist::read_img_file(std::string path) {
       this->imgs.push_back(img);
     } // for
     ifs.close();
+    this->num_images = num_images;
+    this->image_dims = {num_rows, num_columns};
     std::cout << "  img dimensions: (" << num_rows << " X " 
               << num_columns << ")" << std::endl;
     std::cout << "  imgs read: " << this->imgs.size() << std::endl;
@@ -70,32 +74,44 @@ Mnist::Mnist(std::string imgs_path, std::string labels_path, int num_classes) {
   this->read_label_file(labels_path);
 } // Mnist()
 
-void Mnist::view() {
-  for (int i = 0; i < (int) this->imgs.size(); i++) {
-    auto im = this->imgs[i];
-    cv::namedWindow("Img", cv::WINDOW_NORMAL);
-    cv::imshow("Img", im);
-    std::cout << "\nLabel: " << (int) this->labels[i] << std::endl;
-    std::cout << "Onehot: [ ";
-    for (int val : this->get_onehot(i)) {
-      std::cout << val << " ";
-    } // for
-    std::cout << "]" << std::endl;
-    std::cout << "\nPress 'n' to view next image OR any other key to continue...\n" << std::endl;
-    int wk = cv::waitKey(0);
-    if (wk == 'n')
-      std::cout << "next" << std::endl;
-    else 
-      break;
+int Mnist::view_single(int i, std::string s) {
+  auto im = this->imgs.at(i);
+  cv::namedWindow("Img", cv::WINDOW_NORMAL);
+  cv::imshow("Img", im);
+  std::cout << "\n --Image " << i << "--" << std::endl;
+  std::cout << "  Label: " << (int) this->labels.at(i) << std::endl;
+  std::cout << "  Onehot: [ ";
+  for (int val : this->get_onehot(i)) {
+    std::cout << val << " ";
   } // for
+  std::cout << "]" << std::endl;
+  std::cout << s << std::endl;
+  int wk = cv::waitKey(0);
+  return wk;
+} // view_single()
+
+void Mnist::view(int i) {
+  if (i < 0) { // show all images one by one until user quits
+    for (int j = 0; j < (int) this->imgs.size(); j++) {
+      int wk = this->view_single(j, "\nPress 'n' to view next image OR any other key to continue...\n");
+      if (wk == 'n')
+        std::cout << "... displaying next image" << std::endl;
+      else 
+        break;
+    } // for
+  } else
+    this->view_single(i);
 } // view_imgs()
 
 std::vector<int> Mnist::get_onehot(int i) {
-  assert(i >= 0 && i < (int) this->labels.size());
   std::vector<int> v(this->num_classes, 0);
-  v.at((int) this->labels[i]) = 1;
+  v.at((int) this->labels.at(i)) = 1;
   return v;
 } // get_onehot()
+
+const cv::Mat& Mnist::get_image(int i) {
+  return this->imgs.at(i);
+} // get_training()
 
 std::vector<std::vector<int>> Mnist::get_mini_batches(int batch_size) {
   std::srand(std::time(nullptr));
