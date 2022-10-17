@@ -6,35 +6,35 @@
 #define MLP_H_
 
 #include "mnist.h"
+#include "vec2df.h"
 #include <opencv2/core/mat.hpp>
 #include <vector>
 #include <utility>
+#include <string>
+#include <tuple>
 
 class MLP {
   public:
     MLP(int n_input, int n_hidden, int n_output);
-    static void print_weight(const std::vector<std::vector<float>>& w);
-    static void print_bias(const std::vector<float>& b);
     /*
-    void fit(std::vector<cv::Mat> imgs, int n_iter, int batch_size = 32, int lr = 0.1, int dr = 0.9);
-    std::vector<int> predict(std::vector<cv::Mat> imgs);
-    static std::vector<float> fc(const std::vector<float>& x, const std::vector<std::vector<float>>& w,
-                                 const std::vector<float>& b);
-    static std::vector<float> fc_backward(const std::vector<float>& dl_dy, const std::vector<float>& x,
-                                          const std::vector<std::vector<float>>& w, const std::vector<float>& b,
-                                          const std::vector<float>& y);
-    static std::vector<float> relu(const std::vector<float>& x);
-    static std::vector<float> relu_backward(const std::vector<float>& dl_dy, const std::vector<float>& x, 
-                                            const std::vector<float>& y);
-    static std::pair<float, std::vector<float>> loss_cross_entropy_softmax(const std::vector<float>& x,
-                                                                           const std::vector<float>& y);
+    void fit(MNIST mnist, int n_iter, int batch_size = 32, int lr = 0.1, int dr = 0.9);
+    std::vector<int> predict(MNIST mnist);
+    bool save_weights(std::string filename);
     */
 
   private:
-    std::vector<std::vector<float>> w1;
-    std::vector<float> b1;
-    std::vector<std::vector<float>> w2;
-    std::vector<float> b2;
+    vec2df w1;
+    vec2df b1;
+    vec2df w2;
+    vec2df b2;
+    static vec2df fc(const vec2df& x, const vec2df& w, const vec2df& b);
+    static std::tuple<vec2df, vec2df, vec2df> fc_backward(const vec2df& dl_dy,
+        const vec2df& x, const vec2df& w, const vec2df& b, const vec2df& y);
+    /*
+    static vec2df relu(const std::vector<float>& x);
+    static vec2df relu_backward(const vec2df& dl_dy, const vec2df& x, const vec2df& y);
+    static std::pair<float, vec2df> loss_cross_entropy_softmax(const vec2df& x, const vec2df& y);
+    */
 };
 
 #endif // MLP_H_
