@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.1)
+set(CMAKE_CXX_STANDARD 17)
 project(MNIST)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 find_package(OpenCV REQUIRED)
@@ -17,3 +18,6 @@ target_link_libraries(test-mnist-read ${OpenCV_LIBS})
 # test-mlp
 add_executable(test-mlp tests/mlp-test.cpp src/mnist.cpp src/mlp.cpp src/vec2df.cpp)
 target_link_libraries(test-mlp ${OpenCV_LIBS} GSL::gslcblas)
+# test-mlp
+add_executable(mnist-mlp src/main.cpp src/mnist.cpp src/mlp.cpp src/vec2df.cpp)
+target_link_libraries(mnist-mlp ${OpenCV_LIBS} GSL::gslcblas)

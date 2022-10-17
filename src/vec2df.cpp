@@ -5,14 +5,32 @@
 #include <cassert>
 #include <random>
 #include <chrono>
+#include <cstring>
 
 vec2df::vec2df(int nrow, int ncol) {
-  this->shape= {nrow, ncol};
+  this->shape = {nrow, ncol};
   this->size = nrow * ncol;
   this->data = new float[this->size];
 } // vec2df(int, int)
 
 vec2df::vec2df(std::pair<int, int> shape) : vec2df(shape.first, shape.second) {}
+
+vec2df::vec2df(int size, float* data) { 
+  this->shape = {1, size};
+  this->size = size;
+  this->data = new float[this->size];
+  for (int i = 0; i < this->size; i++)
+    this->data[i] = data[i];
+} // vec2df(int, float*)
+
+
+vec2df::vec2df(std::vector<int> v) {
+  this->shape = {1, v.size()};
+  this->size = v.size();
+  this->data = new float[this->size];
+  for (int i = 0; i < this->size; i++)
+    this->data[i] = (float) v[i];
+} // vec2df()
 
 vec2df::vec2df(const vec2df& other) {
   this->shape = other.shape;
@@ -25,16 +43,12 @@ vec2df::vec2df(const vec2df& other) {
 vec2df& vec2df::operator=(const vec2df& other) {
   this->shape = other.shape;
   this->size = other.size;
-  this->copy_data(other.data);
-  return *this;
-} // copy assignment operator
-
-void vec2df::copy_data(float* data) {
   delete[] this->data;
   this->data = new float[this->size];
   for (int i = 0; i < this->size; i++)
     this->data[i] = data[i];
-} // copy_data()
+  return *this;
+} // copy assignment operator
 
 vec2df::~vec2df() {
   delete[] this->data;
@@ -48,7 +62,45 @@ float vec2df::get(int i, int j) const {
   assert(i < this->shape.first && j < this->shape.second);
   int index = i * this->shape.second + j;
   return this->data[index];
-} // get()
+} // get(int, int)
+
+float vec2df::get(int i) const {
+  return this->data[i];
+} // get(int)
+
+float& vec2df::at(int i, int j) const {
+  assert(i < this->shape.first && j < this->shape.second);
+  int index = i * this->shape.second + j;
+  return this->data[index];
+} // at(int, int)
+
+float& vec2df::at(int i) const {
+  return this->data[i];
+} // at(int)
+
+int vec2df::argmax() const {
+  int a_max = 0;
+  float val_max = this->data[0];
+  for (int i = 1; i < this->size; i++) {
+    if (this->data[i] > val_max) {
+      val_max = this->data[i];
+      a_max = i;
+    }// if
+  } // for
+  return a_max;
+} // argmax()
+
+int vec2df::argmin() const {
+  int a_min = 0;
+  float val_min = this->data[0];
+  for (int i = 1; i < this->size; i++) {
+    if (this->data[i] < val_min) {
+      val_min= this->data[i];
+      a_min = i;
+    }// if
+  } // for
+  return a_min;
+} // argmax()
 
 void vec2df::print() const {
   std::cout << "Shape: (" << this->shape.first << ", ";
@@ -63,6 +115,16 @@ void vec2df::print() const {
   std::cout << ']' << std::endl << std::endl;
 } // print()
 
+vec2df vec2df::transpose() const {
+  vec2df res(this->shape.second, this->shape.first);
+  for (int i = 0; i < this->shape.first; i++) {
+    for (int j = 0; j < this->shape.second; j++) {
+      res.at(j, i) = this->get(i,j);
+    } // for j
+  } // for i
+  return res;
+} // transpose()
+
 void vec2df::gaussian_fill(float mean, float std) {
   unsigned seed = std::chrono::steady_clock::now().time_since_epoch().count();
   std::default_random_engine generator(seed);
@@ -71,6 +133,55 @@ void vec2df::gaussian_fill(float mean, float std) {
     this->data[i] = gaussian(generator);
 } // gaussian_fill()
 
+void vec2df::zeros_fill() {
+  std::memset(this->data, 0, sizeof(float) * this->size);
+} //zeros_fill()
+
+vec2df vec2df::clip_min(const vec2df& a, float min_val) {
+  vec2df res(a.shape);
+  for (int i = 0; i < res.size; i++) {
+    if (res.data[i] < min_val)
+      res.data[i] = min_val;
+  } // for
+  return res;
+} // clip_min()
+
+vec2df vec2df::clip_max(const vec2df& a, float max_val) {
+  vec2df res(a.shape);
+  for (int i = 0; i < res.size; i++) {
+    if (res.data[i] > max_val)
+      res.data[i] = max_val;
+  } // for
+  return res;
+} // clip_max()
+
+vec2df& vec2df::scale(float f) {
+  for (int i = 0; i < this->size; i++)
+    this->data[i] *= f;
+  return *this;
+} // scale()
+
+vec2df vec2df::element_multiply(const vec2df& a, const vec2df& b) {
+  assert(a.shape == b.shape);
+  vec2df res(a.shape);
+  for (int i = 0; i < res.size; i++)
+    res.data[i] = a.data[i] * b.data[i];
+  return res;
+} // element_multiply()
+
+
+vec2df vec2df::softmax(const vec2df& a) {
+  vec2df res(a.shape);
+  double sum = 0;
+  for (int i = 0; i < a.size; i++) {
+    res.data[i] = (float) exp(a.data[i]);
+    sum += res.data[i];
+  } // for
+  for (int i = 0; i < res.size; i++)
+    res.data[i] /= sum;
+  return res;
+} // softmax()
+
 vec2df vec2df::operator+(const vec2df& rhs) const {
   assert(this->shape == rhs.shape);
   vec2df res(this->shape);
@@ -78,6 +189,20 @@ vec2df vec2df::operator+(const vec2df& rhs) const {
     res.data[i] = this->data[i] + rhs.data[i];
   return res;
 } // operator+()
+
+vec2df& vec2df::operator+=(const vec2df& rhs) {
+  assert(this->shape == rhs.shape);
+  for (int i = 0; i < this->size; i++)
+    this->data[i] += rhs.data[i];
+  return *this;
+} // operator+=()
+
+vec2df& vec2df::operator-=(const vec2df& rhs) {
+  assert(this->shape == rhs.shape);
+  for (int i = 0; i < this->size; i++)
+    this->data[i] -= rhs.data[i];
+  return *this;
+} // operator-=()
 
 vec2df vec2df::operator-(const vec2df& rhs) const {
   assert(this->shape == rhs.shape);
