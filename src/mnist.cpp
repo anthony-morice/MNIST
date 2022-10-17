@@ -12,6 +12,12 @@
 #include <ctime>
 #include <numeric>
 
+Mnist::Mnist(std::string imgs_path, std::string labels_path, int num_classes) {
+  this->num_classes = num_classes;
+  this->read_img_file(imgs_path);
+  this->read_label_file(labels_path);
+} // Mnist()
+
 void Mnist::read_img_file(std::string path) {
   int magic, num_images, num_rows, num_columns;
   std::cout << "Reading images" << std::endl;
@@ -30,7 +36,9 @@ void Mnist::read_img_file(std::string path) {
     for (int i = 0; i < num_images; i++) {
       cv::Mat img(num_rows, num_columns, CV_8UC1);
       ifs.read((char*) img.data, num_rows * num_columns); 
-      this->imgs.push_back(img);
+      cv::Mat img32f;
+      img.convertTo(img32f, CV_32F);
+      this->imgs.push_back(img32f);
     } // for
     ifs.close();
     this->num_images = num_images;
@@ -67,12 +75,6 @@ void Mnist::read_label_file(std::string path) {
     exit(1);
   } // else
 } // read_label_file()
-
-Mnist::Mnist(std::string imgs_path, std::string labels_path, int num_classes) {
-  this->num_classes = num_classes;
-  this->read_img_file(imgs_path);
-  this->read_label_file(labels_path);
-} // Mnist()
 
 int Mnist::view_single(int i, std::string s) {
   auto im = this->imgs.at(i);
