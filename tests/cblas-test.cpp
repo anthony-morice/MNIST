@@ -18,7 +18,7 @@ int main() {
   cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
               ROWS_C, COLUMNS_C, COLUMNS_A, 1.0,
               a, COLUMNS_A, b, COLUMNS_B, 0.0, c, COLUMNS_C);
-              std::cout << "[ ";
+  std::cout << "[ ";
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 2; j++) {
       std::cout << c[2 * i + j] << ", "; 
