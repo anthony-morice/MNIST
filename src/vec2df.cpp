@@ -71,7 +71,7 @@ void vec2df::gaussian_fill(float mean, float std) {
     this->data[i] = gaussian(generator);
 } // gaussian_fill()
 
-vec2df vec2df::operator+(const vec2df& rhs) {
+vec2df vec2df::operator+(const vec2df& rhs) const {
   assert(this->shape == rhs.shape);
   vec2df res(this->shape);
   for (int i = 0; i < res.size; i++)
@@ -79,7 +79,7 @@ vec2df vec2df::operator+(const vec2df& rhs) {
   return res;
 } // operator+()
 
-vec2df vec2df::operator-(const vec2df& rhs) {
+vec2df vec2df::operator-(const vec2df& rhs) const {
   assert(this->shape == rhs.shape);
   vec2df res(this->shape);
   for (int i = 0; i < res.size; i++)
@@ -87,7 +87,7 @@ vec2df vec2df::operator-(const vec2df& rhs) {
   return res;
 } // operator-()
 
-bool vec2df::operator==(const vec2df& rhs) {
+bool vec2df::operator==(const vec2df& rhs) const {
   float epsilon = 0.0001;
   if (this->shape != rhs.shape) 
     return false;
@@ -98,7 +98,7 @@ bool vec2df::operator==(const vec2df& rhs) {
   return true;
 } // operator==()
 
-vec2df vec2df::operator*(const vec2df& rhs) {
+vec2df vec2df::operator*(const vec2df& rhs) const {
   assert(this->shape.second == rhs.shape.first);
   int columns_a = this->shape.second;
   int columns_b = rhs.shape.second;

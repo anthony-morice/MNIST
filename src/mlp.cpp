@@ -18,17 +18,18 @@ MLP::MLP(int n_input, int n_hidden, int n_output) {
   this->b2 = b2;
 } // MLP()
 
-static vec2df MLP::fc(const vec2df& x, const vec2df& w, const vec2df& b) {
+vec2df MLP::fc(const vec2df& x, const vec2df& w, const vec2df& b) {
   return x * w + b;
 } // fc()
 
-static std::tuple<vec2df, vec2df, vec2df> MLP::fc_backward(const vec2df& dl_dy, const vec2df& x,
+std::tuple<vec2df, vec2df, vec2df> MLP::fc_backward(const vec2df& dl_dy, const vec2df& x,
     const vec2df& w, const vec2df& b, const vec2df& y) {
   // determine dl_dx
   vec2df dl_dx = w * dl_dy;
   // determine dl_dw
   //TODO
+  vec2df dl_dw;
   // determine dl_db
   vec2df dl_db = dl_dy;
   return std::make_tuple(dl_dx, dl_dw, dl_db);
-}
+} // fc_backward()

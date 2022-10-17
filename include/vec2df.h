@@ -18,10 +18,10 @@ class vec2df {
     void print() const;
     float get(int i, int j) const;
     void gaussian_fill(float mean = 0.0, float std = 1.0);
-    vec2df operator+(const vec2df& rhs);
-    vec2df operator-(const vec2df& rhs);
-    vec2df operator*(const vec2df& rhs);
-    bool operator==(const vec2df& rhs);
+    vec2df operator+(const vec2df& rhs) const;
+    vec2df operator-(const vec2df& rhs) const;
+    vec2df operator*(const vec2df& rhs) const;
+    bool operator==(const vec2df& rhs) const;
 
   private:
     std::pair<int, int> shape;
