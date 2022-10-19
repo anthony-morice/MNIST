@@ -34,65 +34,19 @@ std::vector<int> MLP::predict(Mnist& mnist) const {
   return predictions;
 } // predict()
 
-vec2df& MLP::normalize(vec2df& x) {
-  x = (x - this->feature_means) / this->feature_stds;
-  return x; 
-} // normalize(sample) 
-
-void MLP::normalize_all(std::vector<std::vector<std::pair<vec2df,vec2df>>>& x) {
-  for (auto& batch : x) {
-    for (auto& [input, label] : batch) {
-      input = this->normalize(input);
-    } // for
-  } // for
-} // normalize(training_samples) 
-
-void MLP::normalization_fit(std::vector<std::vector<std::pair<vec2df,vec2df>>>& x) {
-  assert(x.size() > 0);
-  vec2df sum(x[0][0].first.get_shape());
-  sum.zeros_fill();
-  int n = 0;
-  // caclulate feature means
-  for (auto& batch : x) {
-    for (auto& [input, label] : batch) {
-      sum += input;
-      n++;
-    } // for
-  } // for batch
-  this->feature_means = sum.scale(1.0 / n);
-  // caculate feature stdevs
-  sum.zeros_fill();
-  for (auto& batch : x) {
-    for (auto& [input, label] : batch) {
-      vec2df diff = input - this->feature_means;
-      sum += vec2df::element_multiply(diff, diff); // square
-    } // for
-  } // for batch
-  sum = sum.scale(1.0 / n); 
-  this->feature_stds = sum.sqrt().add(1e-10);
-} // normalization_fit()
-
 void MLP::load_training_data(std::vector<std::vector<std::pair<vec2df,vec2df>>>& v, Mnist& mnist, int batch_size) {
   auto mini_batches = mnist.get_mini_batches(batch_size);
   for (int i = 0; i < (int) mini_batches.size(); i++) {
     v.push_back({});
     for (int t : mini_batches[i]) {
-      cv::Mat img = mnist.get_image(t); 
-      cv::normalize(img, img, 1.0, 0.0, cv::NORM_L1);
-      vec2df x(img.size[0] * img.size[1], (float*) img.data);
+      const cv::Mat& img = mnist.get_image(t); 
+      cv::Mat norm_img;
+      cv::normalize(img, norm_img, 1.0, 0.0, cv::NORM_L1);
+      vec2df x(norm_img.size[0] * norm_img.size[1], (float*) norm_img.data);
       vec2df y = mnist.get_onehot(t);
       v[i].push_back({x,y});
     } // for t
   } // for i 
-  /*
-  this->normalization_fit(v);
-  std::cout << "Normalization: " << std::endl;
-  std::cout << "  -mean- " << std::endl;
-  this->feature_means.print();
-  std::cout << "  -std- " << std::endl;
-  this->feature_stds.print();
-  this->normalize_all(v);
-  */
 } // load_training_data()
 
 std::vector<float> MLP::fit(Mnist& mnist, int n_iter, int batch_size, float lr, float dr) {
