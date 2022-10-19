@@ -1,5 +1,6 @@
 #include "mlp.h"
 #include <opencv2/core/mat.hpp>
+#include <opencv2/highgui.hpp>
 #include <utility>
 #include <tuple>
 #include <vector>
@@ -21,44 +22,106 @@ MLP::MLP(int n_input, int n_hidden, int n_output) {
   this->b2 = b2;
 } // MLP()
 
-std::vector<int> MLP::predict(cv::Mat img) const {
+std::vector<int> MLP::predict(const cv::Mat& img) const {
   vec2df x(img.size[0] * img.size[1], (float*) img.data);
   return {fc(relu(fc(x, this->w1, this->b1)), this->w2, this->b2).argmax()};
 } // predict()
 
-std::vector<int> MLP::predict(Mnist mnist) const {
+std::vector<int> MLP::predict(Mnist& mnist) const {
   std::vector<int> predictions(mnist.num_images);
   for (int i = 0; i < mnist.num_images; i++)
     predictions[i] = predict(mnist.get_image(i))[0];
   return predictions;
 } // predict()
 
-std::vector<float> MLP::fit(Mnist mnist, int n_iter, int batch_size, int lr, int dr) {
+vec2df& MLP::normalize(vec2df& x) {
+  x = (x - this->feature_means) / this->feature_stds;
+  return x; 
+} // normalize(sample) 
+
+void MLP::normalize_all(std::vector<std::vector<std::pair<vec2df,vec2df>>>& x) {
+  for (auto& batch : x) {
+    for (auto& [input, label] : batch) {
+      input = this->normalize(input);
+    } // for
+  } // for
+} // normalize(training_samples) 
+
+void MLP::normalization_fit(std::vector<std::vector<std::pair<vec2df,vec2df>>>& x) {
+  assert(x.size() > 0);
+  vec2df sum(x[0][0].first.get_shape());
+  sum.zeros_fill();
+  int n = 0;
+  // caclulate feature means
+  for (auto& batch : x) {
+    for (auto& [input, label] : batch) {
+      sum += input;
+      n++;
+    } // for
+  } // for batch
+  this->feature_means = sum.scale(1.0 / n);
+  // caculate feature stdevs
+  sum.zeros_fill();
+  for (auto& batch : x) {
+    for (auto& [input, label] : batch) {
+      vec2df diff = input - this->feature_means;
+      sum += vec2df::element_multiply(diff, diff); // square
+    } // for
+  } // for batch
+  sum = sum.scale(1.0 / n); 
+  this->feature_stds = sum.sqrt().add(1e-10);
+} // normalization_fit()
+
+void MLP::load_training_data(std::vector<std::vector<std::pair<vec2df,vec2df>>>& v, Mnist& mnist, int batch_size) {
   auto mini_batches = mnist.get_mini_batches(batch_size);
+  for (int i = 0; i < (int) mini_batches.size(); i++) {
+    v.push_back({});
+    for (int t : mini_batches[i]) {
+      cv::Mat img = mnist.get_image(t); 
+      cv::normalize(img, img, 1.0, 0.0, cv::NORM_L1);
+      vec2df x(img.size[0] * img.size[1], (float*) img.data);
+      vec2df y = mnist.get_onehot(t);
+      v[i].push_back({x,y});
+    } // for t
+  } // for i 
+  /*
+  this->normalization_fit(v);
+  std::cout << "Normalization: " << std::endl;
+  std::cout << "  -mean- " << std::endl;
+  this->feature_means.print();
+  std::cout << "  -std- " << std::endl;
+  this->feature_stds.print();
+  this->normalize_all(v);
+  */
+} // load_training_data()
+
+std::vector<float> MLP::fit(Mnist& mnist, int n_iter, int batch_size, float lr, float dr) {
+  std::vector<std::vector<std::pair<vec2df, vec2df>>> mini_batches;
+  this->load_training_data(mini_batches, mnist, batch_size);
   int batch_total = mini_batches.size();
   std::vector<float> losses;
   int batch = 0;
   std::cout << "\n*******Training Multi-layer Perceptron*******\n" << std::endl;
+  // allocate space for gradient accumulators
+  vec2df dL_dw1(this->w1.get_shape().second, this->w1.get_shape().first);
+  vec2df dL_db1(this->b1.get_shape());
+  vec2df dL_dw2(this->w2.get_shape().second, this->w2.get_shape().first);
+  vec2df dL_db2(this->b2.get_shape());
+  // mini-batched stochastic gradient descent
   for (int i = 0; i < n_iter; i++) {
-    if (i != 0 && i % 2500 == 0) { // update learning rate
+    if (i != 0 && i % 500 == 0) { // update learning rate
       lr *= dr;
       std::cout << "\nIteration: " << i << " of " << n_iter << std::endl;
-      std::cout << "  new lr: " << lr << ", loss: " << *losses.rend() << std::endl;
+      std::cout << "  new lr: " << lr << ", loss: " << *losses.rbegin() << std::endl;
     } // if
-    vec2df dL_dw1(this->w1.get_shape());
+    // zero gradient accumulators
     dL_dw1.zeros_fill();
-    vec2df dL_db1(this->b1.get_shape());
     dL_db1.zeros_fill();
-    vec2df dL_dw2(this->w2.get_shape());
     dL_dw2.zeros_fill();
-    vec2df dL_db2(this->b2.get_shape());
     dL_db2.zeros_fill();
-    int loss_sum = 0;
-    std::vector<int> mini_batch = mini_batches[batch];
-    for (int t : mini_batch) {
-      cv::Mat img = mnist.get_image(t); 
-      vec2df x(img.size[0] * img.size[1], (float*) img.data);
-      vec2df y = mnist.get_onehot(t); 
+    float loss_sum = 0;
+    auto& mini_batch = mini_batches[batch];
+    for (auto& [x, y] : mini_batch) {
       // forward_pass
       vec2df a1 = fc(x, this->w1, this->b1);
       vec2df f1 = relu(a1);
@@ -74,13 +137,13 @@ std::vector<float> MLP::fit(Mnist mnist, int n_iter, int batch_size, int lr, int
       dL_db1 += dl_db1;
       dL_dw2 += dl_dw2;
       dL_db2 += dl_db2;
-    } // for t
+    } // for 
     // increment batch index or reset if at end of epoch
     batch += batch + 2 < batch_total ? 1 : 0;
     // update weights
-    this->w1 -= dL_dw1.scale(lr / mini_batch.size());
+    this->w1 -= dL_dw1.scale(lr / mini_batch.size()).transpose();
     this->b1 -= dL_db1.scale(lr / mini_batch.size());
-    this->w2 -= dL_dw2.scale(lr / mini_batch.size());
+    this->w2 -= dL_dw2.scale(lr / mini_batch.size()).transpose();
     this->b2 -= dL_db2.scale(lr / mini_batch.size());
     losses.push_back(loss_sum / mini_batch.size());
   } // for i
@@ -93,7 +156,7 @@ vec2df MLP::fc(const vec2df& x, const vec2df& w, const vec2df& b) {
 
 std::tuple<vec2df, vec2df, vec2df> MLP::fc_backward(const vec2df& dl_dy, const vec2df& x,
     const vec2df& w, const vec2df& b, const vec2df& y) {
-  vec2df dl_dx = w * dl_dy;
+  vec2df dl_dx = dl_dy * w.transpose();
   vec2df dl_dw = dl_dy.transpose() * x;
   vec2df dl_db = dl_dy;
   return std::make_tuple(dl_dx, dl_dw, dl_db);
@@ -108,7 +171,7 @@ vec2df MLP::relu_backward(const vec2df& dl_dy, const vec2df& x, const vec2df& y)
 } // relu_backward()
 
 std::pair<float, vec2df> MLP::loss_cross_entropy_softmax(const vec2df& x, const vec2df& y) {
-  vec2df soft = vec2df::softmax(y);
+  vec2df soft = vec2df::softmax(x);
   float loss = -1 * log(soft.get(y.argmax()));
   vec2df dl_dy = soft - y;
   return {loss, dl_dy}; 

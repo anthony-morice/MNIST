@@ -27,6 +27,8 @@ class vec2df {
     int argmax() const;
     int argmin() const;
     vec2df& scale(float f);
+    vec2df& sqrt();
+    vec2df& add(float f);
     void gaussian_fill(float mean = 0.0, float std = 1.0);
     void zeros_fill();
     static vec2df clip_min(const vec2df& a, float min_val);
@@ -37,6 +39,7 @@ class vec2df {
     vec2df& operator+=(const vec2df& rhs);
     vec2df& operator-=(const vec2df& rhs);
     vec2df operator-(const vec2df& rhs) const;
+    vec2df operator/(const vec2df& rhs) const;
     vec2df operator*(const vec2df& rhs) const;
     bool operator==(const vec2df& rhs) const;
 

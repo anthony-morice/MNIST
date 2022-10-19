@@ -1,11 +1,11 @@
 #include "vec2df.h"
 #include <gsl/gsl_cblas.h>
-#include <cmath>
 #include <iostream>
 #include <cassert>
 #include <random>
 #include <chrono>
 #include <cstring>
+#include <cmath>
 
 vec2df::vec2df(int nrow, int ncol) {
   this->shape = {nrow, ncol};
@@ -46,7 +46,7 @@ vec2df& vec2df::operator=(const vec2df& other) {
   delete[] this->data;
   this->data = new float[this->size];
   for (int i = 0; i < this->size; i++)
-    this->data[i] = data[i];
+    this->data[i] = other.data[i];
   return *this;
 } // copy assignment operator
 
@@ -161,6 +161,18 @@ vec2df& vec2df::scale(float f) {
   return *this;
 } // scale()
 
+vec2df& vec2df::sqrt() {
+  for (int i = 0; i < this->size; i++)
+    this->data[i] = std::sqrt(this->data[i]);
+  return *this;
+} // sqrt()
+
+vec2df& vec2df::add(float f) {
+  for (int i = 0; i < this->size; i++)
+    this->data[i] += f;
+  return *this;
+} // add()
+
 vec2df vec2df::element_multiply(const vec2df& a, const vec2df& b) {
   assert(a.shape == b.shape);
   vec2df res(a.shape);
@@ -222,6 +234,14 @@ bool vec2df::operator==(const vec2df& rhs) const {
   } // for
   return true;
 } // operator==()
+
+vec2df vec2df::operator/(const vec2df& rhs) const {
+  assert(this->shape == rhs.shape);
+  vec2df res(this->shape);
+  for (int i = 0; i < res.size; i++)
+    res.data[i] = this->data[i] / rhs.data[i];
+  return res;
+} // operator*()
 
 vec2df vec2df::operator*(const vec2df& rhs) const {
   assert(this->shape.second == rhs.shape.first);
