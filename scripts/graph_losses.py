@@ -15,7 +15,7 @@ def read_csv_file(file_path, headed = True):
   return (header, data) if headed else data
 
 def graph(data):
-  plt.plot(data[:,1], 'r') 
+  plt.plot(data[:], 'r') 
   plt.show()
 
 def main():
