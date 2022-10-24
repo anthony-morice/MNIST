@@ -1,3 +1,4 @@
+## MNIST
 This repository contains an MNIST image/label parser and
 multi-layer perceptron (MLP) classifier written from scratch in C++. 
 
@@ -10,7 +11,6 @@ MNIST data files can be found at
 
 ![MLP Confusion Matrix](results/confusion_256-hidden_5000iter.png)
 
-# Usage instructions
 ## Build
 ```
 cd scripts
