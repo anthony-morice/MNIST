@@ -24,9 +24,11 @@ int main(int argc, char** argv) {
     return 1;
   } // if
   Mnist data(argv[1], argv[2]); // load and parse data
+  // MLP mlp("../results/weights_128-hidden.xml");
   int input_dim = data.image_dims.first * data.image_dims.second;
   MLP mlp(input_dim, 128, data.num_classes);
-  std::vector<float> losses = mlp.fit(data, 200000, 32, 0.75, 0.92);
+  std::vector<float> losses = mlp.fit(data, 250000, 32, 0.75, 0.92);
+  mlp.save_weights("../results/weights_128-hidden.xml");
   write_to_csv("../results/training_losses.csv", losses);
   std::system("./graph_losses.py ../results/training_losses.csv");
   std::vector<std::pair<int,int>> prediction_results;

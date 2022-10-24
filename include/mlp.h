@@ -16,10 +16,13 @@
 class MLP {
   public:
     MLP(int n_input, int n_hidden, int n_output);
+    MLP(std::string weights);
     std::vector<float> fit(Mnist& mnist, int n_iter, 
         int batch_size = 32, float lr = 0.1, float dr = 0.9);
     int predict(const cv::Mat& img) const;
     std::vector<int> predict_mnist(Mnist& mnist) const;
+    void save_weights(std::string file) const;
+    bool load_weights(std::string file);
 
   private:
     vec2df w1;

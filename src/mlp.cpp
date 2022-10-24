@@ -4,7 +4,9 @@
 #include <utility>
 #include <tuple>
 #include <vector>
+#include <string>
 #include <iostream>
+#include <cstring>
 #include <omp.h>
 
 MLP::MLP(int n_input, int n_hidden, int n_output) {
@@ -22,6 +24,28 @@ MLP::MLP(int n_input, int n_hidden, int n_output) {
   b2.gaussian_fill();
   this->b2 = b2;
 } // MLP()
+
+MLP::MLP(std::string weights) {
+  // initialize weights from file
+  cv::FileStorage fs(weights, cv::FileStorage::READ);
+  cv::Mat w1;
+  cv::Mat w2;
+  cv::Mat b1;
+  cv::Mat b2;
+  fs["w1"] >> w1;
+  fs["w2"] >> w2;
+  fs["b1"] >> b1;
+  fs["b2"] >> b2;
+  fs.release();
+  this->w1 = vec2df(w1.size[0] * w1.size[1], (float*) w1.data);
+  this->w1.shape = {w1.size[0], w1.size[1]};
+  this->w2 = vec2df(w2.size[0] * w2.size[1], (float*) w2.data);
+  this->w2.shape = {w2.size[0], w2.size[1]};
+  this->b1 = vec2df(b1.size[0] * b1.size[1], (float*) b1.data);
+  this->b1.shape = {b1.size[0], b1.size[1]};
+  this->b2 = vec2df(b2.size[0] * b2.size[1], (float*) b2.data);
+  this->b2.shape = {b2.size[0], b2.size[1]};
+} // MLP(string)
 
 vec2df MLP::fc(const vec2df& x, const vec2df& w, const vec2df& b) {
   return x * w + b;
@@ -84,7 +108,7 @@ std::vector<float> MLP::fit(Mnist& mnist, int n_iter, int batch_size, float lr, 
     dL_db1.zeros_fill();
     dL_dw2.zeros_fill();
     dL_db2.zeros_fill();
-    if (i != 0 && i % (n_iter / 40) == 0) { // update learning rate
+    if (i != 0 && i % (n_iter / 40) == 0 && lr > 0.05) { // update learning rate
       lr *= dr;
       std::cout << "\nIteration: " << i << " of " << n_iter << std::endl;
       std::cout << "  new lr: " << lr << ", loss: " << *losses.rbegin() << std::endl;
@@ -137,7 +161,9 @@ std::vector<float> MLP::fit(Mnist& mnist, int n_iter, int batch_size, float lr, 
 } // fit()
 
 int MLP::predict(const cv::Mat& img) const {
-  vec2df x(img.size[0] * img.size[1], (float*) img.data);
+  cv::Mat norm_img;
+  cv::normalize(img, norm_img, 1.0, 0.0, cv::NORM_L1);
+  vec2df x(norm_img.size[0] * norm_img.size[1], (float*) norm_img.data);
   return fc(relu(fc(x, this->w1, this->b1)), this->w2, this->b2).argmax();
 } // predict()
 
@@ -147,3 +173,20 @@ std::vector<int> MLP::predict_mnist(Mnist& mnist) const {
     predictions[i] = predict(mnist.get_image(i));
   return predictions;
 } // predict_mnist()
+
+void MLP::save_weights(std::string file) const {
+  cv::FileStorage fs(file, cv::FileStorage::WRITE);
+  cv::Mat w1(this->w1.get_shape().first, this->w1.get_shape().second, CV_32F);
+  std::memcpy(w1.data, this->w1.data, this->w1.size * sizeof(float));
+  cv::Mat w2(this->w2.get_shape().first, this->w2.get_shape().second, CV_32F);
+  std::memcpy(w2.data, this->w2.data, this->w2.size * sizeof(float));
+  cv::Mat b1(this->b1.get_shape().first, this->b1.get_shape().second, CV_32F);
+  std::memcpy(b1.data, this->b1.data, this->b1.size * sizeof(float));
+  cv::Mat b2(this->b2.get_shape().first, this->b2.get_shape().second, CV_32F);
+  std::memcpy(b2.data, this->b2.data, this->b2.size * sizeof(float));
+  fs << "w1" << w1;
+  fs << "w2" << w2;
+  fs << "b1" << b1;
+  fs << "b2" << b2;
+  fs.release();
+} // save_weights()
