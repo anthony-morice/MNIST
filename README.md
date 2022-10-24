@@ -1,4 +1,4 @@
-This repository contains a MNIST image/label parser and
+This repository contains an MNIST image/label parser and
 multi-layer perceptron (MLP) classifier written from scratch in C++. 
 
 OpenCV is used to view and normalize images; the googletest framework is used
