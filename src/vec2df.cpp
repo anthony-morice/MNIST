@@ -23,7 +23,6 @@ vec2df::vec2df(int size, float* data) {
     this->data[i] = data[i];
 } // vec2df(int, float*)
 
-
 vec2df::vec2df(std::vector<int> v) {
   this->shape = {1, v.size()};
   this->size = v.size();
@@ -140,8 +139,10 @@ void vec2df::zeros_fill() {
 vec2df vec2df::clip_min(const vec2df& a, float min_val) {
   vec2df res(a.shape);
   for (int i = 0; i < res.size; i++) {
-    if (res.data[i] < min_val)
+    if (a.data[i] < min_val)
       res.data[i] = min_val;
+    else
+      res.data[i] = a.data[i];
   } // for
   return res;
 } // clip_min()
@@ -149,8 +150,10 @@ vec2df vec2df::clip_min(const vec2df& a, float min_val) {
 vec2df vec2df::clip_max(const vec2df& a, float max_val) {
   vec2df res(a.shape);
   for (int i = 0; i < res.size; i++) {
-    if (res.data[i] > max_val)
+    if (a.data[i] > max_val)
       res.data[i] = max_val;
+    else
+      res.data[i] = a.data[i];
   } // for
   return res;
 } // clip_max()

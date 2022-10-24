@@ -42,11 +42,9 @@ class vec2df {
     vec2df operator/(const vec2df& rhs) const;
     vec2df operator*(const vec2df& rhs) const;
     bool operator==(const vec2df& rhs) const;
-
-  private:
-    std::pair<int, int> shape;
-    int size;
     float* data;
+    int size;
+    std::pair<int, int> shape;
 };
 
 #endif // VEC2DF_H_

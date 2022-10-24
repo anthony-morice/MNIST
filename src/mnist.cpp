@@ -1,4 +1,4 @@
-#include "mnist.h"
+#include <mnist.h>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -105,11 +105,15 @@ void Mnist::view(int i) {
     this->view_single(i);
 } // view_imgs()
 
-std::vector<int> Mnist::get_onehot(int i) {
+std::vector<int> Mnist::get_onehot(int i) const {
   std::vector<int> v(this->num_classes, 0);
   v.at((int) this->labels.at(i)) = 1;
   return v;
 } // get_onehot()
+
+int Mnist::get_label(int i) const {
+  return (int) this->labels.at(i);
+} // get_label()
 
 const cv::Mat& Mnist::get_image(int i) {
   return this->imgs.at(i);

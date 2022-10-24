@@ -1,16 +1,29 @@
-MNIST training and test image/label parsing for machine learning projects.
+This repository contains a MNIST image/label parser and
+multi-layer perceptron (MLP) classifier written from scratch in C++. 
 
-## Build instructions
+OpenCV is used to view and normalize images; the googletest framework is used
+for unit testing; OpenMP is used to parallelize MLP training; CBLAS is used for
+matrix multiplications; and CMake is used as the build system.
+
+MNIST data files can be found at
+[http://yann.lecun.com/exdb/mnist/](http://yann.lecun.com/exdb/mnist/)
+
+![MLP Confusion Matrix](results/confusion_128-hidden.png)
+
+# Usage instructions
+## Build
 ```
-mkdir build
-cd build
-cmake ..
-cmake --build .
-./test-mnist-read <path-to-MNIST-image-file> <path-to-MNIST-label-file>
+cd scripts
+./build.sh
+```
+## Run
+```
+cd scripts
+./run.sh
+```
+## Run Tests
+```
+cd scripts
+./run.sh test
 ```
 
-## Recompile after changes
-```
-cd build
-cmake --build .
-```
