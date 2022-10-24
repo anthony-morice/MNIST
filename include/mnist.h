@@ -14,7 +14,8 @@ class Mnist {
   public:
     Mnist(std::string imgs_path, std::string labels_path, int num_classes = 10);
     const cv::Mat& get_image(int i);
-    std::vector<int> get_onehot(int i);
+    std::vector<int> get_onehot(int i) const;
+    int get_label(int i) const;
     std::vector<std::vector<int>> get_mini_batches(int batch_size);
     void view(int i = -1);
     int num_classes;
