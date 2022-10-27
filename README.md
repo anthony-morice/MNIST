@@ -9,6 +9,12 @@ matrix multiplications; and CMake is used as the build system.
 MNIST data files can be found at
 [http://yann.lecun.com/exdb/mnist/](http://yann.lecun.com/exdb/mnist/)
 
+A model with 300 hidden units was trained for 100 epochs on the training data
+using an 80/20 training-validation split. The classification performance of that
+model on the 10,000 image test set is shown below. The model is provided in the
+[results](/results/models/model_10-26-1733)
+directory for reference.
+
 ![MLP Confusion Matrix](results/models/model_10-26-1733/model_10-26-1733_confusion.png)
 
 ## Build
