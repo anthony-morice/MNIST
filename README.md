@@ -8,28 +8,37 @@ matrix multiplications; and CMake is used as the build system.
 MNIST data files can be found at
 [http://yann.lecun.com/exdb/mnist/](http://yann.lecun.com/exdb/mnist/)
 
-![MLP Confusion Matrix](results/confusion_128-hidden_5000iter.png)
+![MLP Confusion Matrix](results/models/model_10-26-1733/model_10-26-1733_confusion.png)
 
 # Usage instructions
 ## Build
+
 ```
 cd scripts
 ./build.sh
 ```
 ## Run
+
+To train a model from scratch...
 ```
 cd scripts
 ./run.sh
 ```
-Or to load weights from file and evaluate on test images...
+
+To train a model from a checkpoint...
 ```
 cd scripts
-./run.sh load <path-to-weights>
+./run.sh load-mlp <path-to-checkpoint>
 ```
 
-## Run Tests
+Or to load an existing model and evaluate on test images...
+```
+cd scripts
+./run.sh test-mlp <path-to-checkpoint>
+```
+
+## Run Google Tests
 ```
 cd scripts
 ./run.sh test
 ```
-
