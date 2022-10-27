@@ -4,9 +4,9 @@
 #include <utility>
 #include <tuple>
 #include <vector>
+#include <cstring>
 #include <string>
 #include <iostream>
-#include <cstring>
 #include <omp.h>
 
 MLP::MLP(int n_input, int n_hidden, int n_output) {
@@ -25,26 +25,8 @@ MLP::MLP(int n_input, int n_hidden, int n_output) {
   this->b2 = b2;
 } // MLP()
 
-MLP::MLP(std::string weights) {
-  // initialize weights from file
-  cv::FileStorage fs(weights, cv::FileStorage::READ);
-  cv::Mat w1;
-  cv::Mat w2;
-  cv::Mat b1;
-  cv::Mat b2;
-  fs["w1"] >> w1;
-  fs["w2"] >> w2;
-  fs["b1"] >> b1;
-  fs["b2"] >> b2;
-  fs.release();
-  this->w1 = vec2df(w1.size[0] * w1.size[1], (float*) w1.data);
-  this->w1.shape = {w1.size[0], w1.size[1]};
-  this->w2 = vec2df(w2.size[0] * w2.size[1], (float*) w2.data);
-  this->w2.shape = {w2.size[0], w2.size[1]};
-  this->b1 = vec2df(b1.size[0] * b1.size[1], (float*) b1.data);
-  this->b1.shape = {b1.size[0], b1.size[1]};
-  this->b2 = vec2df(b2.size[0] * b2.size[1], (float*) b2.data);
-  this->b2.shape = {b2.size[0], b2.size[1]};
+MLP::MLP(std::string weight_file) {
+  this->load_weights(weight_file);
 } // MLP(string)
 
 vec2df MLP::fc(const vec2df& x, const vec2df& w, const vec2df& b) {
@@ -74,98 +56,16 @@ std::pair<float, vec2df> MLP::loss_cross_entropy_softmax(const vec2df& x, const 
   return {loss, dl_dy}; 
 } // loss_cross_entropy_softmax()
 
-void MLP::load_training_data(std::vector<std::vector<std::pair<vec2df,vec2df>>>& v, Mnist& mnist, int batch_size) {
-  auto mini_batches = mnist.get_mini_batches(batch_size);
-  for (int i = 0; i < (int) mini_batches.size(); i++) {
-    v.push_back({});
-    for (int t : mini_batches[i]) {
-      const cv::Mat& img = mnist.get_image(t); 
-      cv::Mat norm_img;
-      cv::normalize(img, norm_img, 1.0, 0.0, cv::NORM_L1);
-      vec2df x(norm_img.size[0] * norm_img.size[1], (float*) norm_img.data);
-      vec2df y = mnist.get_onehot(t);
-      v[i].push_back({x,y});
-    } // for t
-  } // for i 
-} // load_training_data()
-
-std::vector<float> MLP::fit(Mnist& mnist, int n_iter, int batch_size, float lr, float dr) {
-  std::vector<std::vector<std::pair<vec2df, vec2df>>> mini_batches;
-  this->load_training_data(mini_batches, mnist, batch_size);
-  int batch_total = mini_batches.size();
-  std::vector<float> losses;
-  int batch = 0;
-  std::cout << "\n*******Training Multi-layer Perceptron*******\n" << std::endl;
-  // allocate space for gradient accumulators
-  vec2df dL_dw1(this->w1.get_shape().second, this->w1.get_shape().first);
-  vec2df dL_db1(this->b1.get_shape());
-  vec2df dL_dw2(this->w2.get_shape().second, this->w2.get_shape().first);
-  vec2df dL_db2(this->b2.get_shape());
-  // mini-batched stochastic gradient descent
-  for (int i = 0; i < n_iter; i++) {
-    // zero gradient accumulators
-    dL_dw1.zeros_fill();
-    dL_db1.zeros_fill();
-    dL_dw2.zeros_fill();
-    dL_db2.zeros_fill();
-    if (i != 0 && i % (n_iter / 40) == 0 && lr > 0.05) { // update learning rate
-      lr *= dr;
-      std::cout << "\nIteration: " << i << " of " << n_iter << std::endl;
-      std::cout << "  new lr: " << lr << ", loss: " << *losses.rbegin() << std::endl;
-    } // if
-    float loss_sum = 0;
-    auto& mini_batch = mini_batches[batch];
-    #pragma omp parallel 
-    {
-      vec2df dL_dw1_local = dL_dw1;
-      vec2df dL_db1_local = dL_db1;
-      vec2df dL_dw2_local = dL_dw2;
-      vec2df dL_db2_local = dL_db2;
-      #pragma omp barrier
-      #pragma omp for reduction(+: loss_sum)
-      for (auto& [x, y] : mini_batch) {
-        // forward_pass
-        vec2df a1 = fc(x, this->w1, this->b1);
-        vec2df f1 = relu(a1);
-        vec2df y_tilde = fc(f1, this->w2, this->b2); // prediction
-        auto [loss, dl_dy] = loss_cross_entropy_softmax(y_tilde, y);
-        loss_sum += loss;
-        // backpropagation
-        auto [dl_df1, dl_dw2, dl_db2] = fc_backward(dl_dy, f1, w2, b2, y);
-        vec2df dl_da1 = relu_backward(dl_df1, a1, f1);
-        auto [dl_dx, dl_dw1, dl_db1] = fc_backward(dl_da1, x, w1, b1, a1);
-        // gradient accumulation
-        dL_dw1_local += dl_dw1;
-        dL_db1_local += dl_db1;
-        dL_dw2_local += dl_dw2;
-        dL_db2_local += dl_db2;
-      } // for 
-      #pragma omp critical 
-      {
-        dL_dw1 += dL_dw1_local;
-        dL_db1 += dL_db1_local;
-        dL_dw2 += dL_dw2_local;
-        dL_db2 += dL_db2_local;
-      } // omp critical
-    } // omp parallel
-    // increment batch index or reset if at end of epoch
-    batch += batch + 2 < batch_total ? 1 : 0;
-    // update weights
-    this->w1 -= dL_dw1.scale(lr / mini_batch.size()).transpose();
-    this->b1 -= dL_db1.scale(lr / mini_batch.size());
-    this->w2 -= dL_dw2.scale(lr / mini_batch.size()).transpose();
-    this->b2 -= dL_db2.scale(lr / mini_batch.size());
-    losses.push_back(loss_sum / mini_batch.size());
-  } // for i
-  return losses;
-} // fit()
-
 int MLP::predict(const cv::Mat& img) const {
   cv::Mat norm_img;
   cv::normalize(img, norm_img, 1.0, 0.0, cv::NORM_L1);
   vec2df x(norm_img.size[0] * norm_img.size[1], (float*) norm_img.data);
   return fc(relu(fc(x, this->w1, this->b1)), this->w2, this->b2).argmax();
-} // predict()
+} // predict(Mat)
+
+int MLP::predict(const vec2df& x) const {
+  return fc(relu(fc(x, this->w1, this->b1)), this->w2, this->b2).argmax();
+} // predict(vec2df)
 
 std::vector<int> MLP::predict_mnist(Mnist& mnist) const {
   std::vector<int> predictions(mnist.num_images);
@@ -190,3 +90,137 @@ void MLP::save_weights(std::string file) const {
   fs << "b2" << b2;
   fs.release();
 } // save_weights()
+
+void MLP::load_weights(std::string file) {
+  cv::FileStorage fs(file, cv::FileStorage::READ);
+  cv::Mat w1;
+  cv::Mat w2;
+  cv::Mat b1;
+  cv::Mat b2;
+  fs["w1"] >> w1;
+  fs["w2"] >> w2;
+  fs["b1"] >> b1;
+  fs["b2"] >> b2;
+  fs.release();
+  this->w1 = vec2df(w1.size[0] * w1.size[1], (float*) w1.data);
+  this->w1.shape = {w1.size[0], w1.size[1]};
+  this->w2 = vec2df(w2.size[0] * w2.size[1], (float*) w2.data);
+  this->w2.shape = {w2.size[0], w2.size[1]};
+  this->b1 = vec2df(b1.size[0] * b1.size[1], (float*) b1.data);
+  this->b1.shape = {b1.size[0], b1.size[1]};
+  this->b2 = vec2df(b2.size[0] * b2.size[1], (float*) b2.data);
+  this->b2.shape = {b2.size[0], b2.size[1]};
+} // load_weights
+
+void MLP::load_training_data(std::vector<std::vector<std::pair<vec2df,vec2df>>>& v, Mnist& mnist, int batch_size) {
+  auto mini_batches = mnist.get_mini_batches(batch_size);
+  for (int i = 0; i < (int) mini_batches.size(); i++) {
+    v.push_back({});
+    for (int t : mini_batches[i]) {
+      const cv::Mat& img = mnist.get_image(t); 
+      cv::Mat norm_img;
+      cv::normalize(img, norm_img, 1.0, 0.0, cv::NORM_L1);
+      vec2df x(norm_img.size[0] * norm_img.size[1], (float*) norm_img.data);
+      vec2df y = mnist.get_onehot(t);
+      v[i].push_back({x,y});
+    } // for t
+  } // for i 
+} // load_training_data()
+
+std::pair<std::vector<float>, std::vector<float>> MLP::fit(Mnist& mnist, int
+    n_epochs, int batch_size, float lr, float dr) {
+  std::vector<std::vector<std::pair<vec2df, vec2df>>> mini_batches;
+  this->load_training_data(mini_batches, mnist, batch_size);
+  std::cout << "\n*******Training Multi-layer Perceptron*******\n" << std::endl;
+  int batch = 0, batch_total = mini_batches.size();
+  int validation_correct = 0, validation_total = 0, no_improvement = 0;
+  float best_validation = 0.0;
+  std::vector<float> losses, validation_accuracies;
+  // allocate space for gradient accumulators
+  vec2df dL_dw1(this->w1.get_shape().second, this->w1.get_shape().first);
+  vec2df dL_db1(this->b1.get_shape());
+  vec2df dL_dw2(this->w2.get_shape().second, this->w2.get_shape().first);
+  vec2df dL_db2(this->b2.get_shape());
+  // mini-batched stochastic gradient descent
+  while (n_epochs > 0 && no_improvement < 5) {
+    auto& mini_batch = mini_batches[batch];
+    // use last 20% of training set as validation set
+    if (batch / 0.8 < batch_total) {
+      // zero gradient accumulators
+      dL_dw1.zeros_fill();
+      dL_db1.zeros_fill();
+      dL_dw2.zeros_fill();
+      dL_db2.zeros_fill();
+      double loss_sum = 0;
+      #pragma omp parallel 
+      {
+        vec2df dL_dw1_local = dL_dw1;
+        vec2df dL_db1_local = dL_db1;
+        vec2df dL_dw2_local = dL_dw2;
+        vec2df dL_db2_local = dL_db2;
+        #pragma omp barrier
+        #pragma omp for reduction(+: loss_sum)
+        for (auto& [x, y] : mini_batch) {
+          // forward_pass
+          vec2df a1 = fc(x, this->w1, this->b1);
+          vec2df f1 = relu(a1);
+          vec2df y_tilde = fc(f1, this->w2, this->b2); // prediction
+          auto [loss, dl_dy] = loss_cross_entropy_softmax(y_tilde, y);
+          loss_sum += loss;
+          // backpropagation
+          auto [dl_df1, dl_dw2, dl_db2] = fc_backward(dl_dy, f1, w2, b2, y);
+          vec2df dl_da1 = relu_backward(dl_df1, a1, f1);
+          auto [dl_dx, dl_dw1, dl_db1] = fc_backward(dl_da1, x, w1, b1, a1);
+          // gradient accumulation
+          dL_dw1_local += dl_dw1;
+          dL_db1_local += dl_db1;
+          dL_dw2_local += dl_dw2;
+          dL_db2_local += dl_db2;
+        } // for 
+        #pragma omp critical 
+        {
+          dL_dw1 += dL_dw1_local;
+          dL_db1 += dL_db1_local;
+          dL_dw2 += dL_dw2_local;
+          dL_db2 += dL_db2_local;
+        } // omp critical
+      } // omp parallel
+      // update weights
+      this->w1 -= dL_dw1.scale(lr / mini_batch.size()).transpose();
+      this->b1 -= dL_db1.scale(lr / mini_batch.size());
+      this->w2 -= dL_dw2.scale(lr / mini_batch.size()).transpose();
+      this->b2 -= dL_db2.scale(lr / mini_batch.size());
+      losses.push_back(float(loss_sum / mini_batch.size()));
+      std::cout << "\x1b[0G" << "Batch Loss: " << *losses.rbegin();
+      std::cout.flush();
+    } else { // evalute current weights on validation set
+      for (auto& [x, y] : mini_batch) {
+        int prediction = this->predict(x);
+        if (prediction == y.argmax())
+          validation_correct++;
+        validation_total++;
+      } // for
+    } // else
+    // update batch index
+    if (batch + 2 < batch_total) {
+      batch++;
+    } else { // end of epoch, save validation stats and reset batch number
+      no_improvement++;
+      validation_accuracies.push_back(validation_correct / (float) validation_total);
+      if (*validation_accuracies.rbegin() > best_validation) {
+        best_validation = *validation_accuracies.rbegin();
+        this->save_weights("training_cache.xml");
+        no_improvement = 0;
+      } // if
+      batch = validation_correct = validation_total = 0;
+      lr *= dr; // update learning rate
+      std::cout << "\n\nEpochs Remaining: " << n_epochs << std::endl;
+      std::cout << "  new lr: " << lr 
+                << ", validation: " << *validation_accuracies.rbegin()
+                << ", best: " << best_validation << std::endl << std::endl;
+      n_epochs--;
+    } // else
+  } // while n_epochs 
+  this->load_weights("training_cache.xml");
+  return {losses, validation_accuracies};
+} // fit()
