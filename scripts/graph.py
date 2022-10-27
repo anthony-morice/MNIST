@@ -14,16 +14,17 @@ def read_csv_file(file_path, headed = True):
     data[i] = list(map(lambda x: float(x), ln.strip().split(',')))
   return (header, data) if headed else data
 
-def graph(data):
+def graph(data, title):
+  plt.title(title)
   plt.plot(data[:], 'r') 
   plt.show()
 
 def main():
-  if len(sys.argv) < 2:
-    print('Usage: ./graph_losses.py <path-to-losses-file>')
+  if len(sys.argv) < 3:
+    print('Usage: ./graph.py <path-to-losses-file> <title>')
     exit(1)
   data = np.array(read_csv_file(sys.argv[1], headed=False))
-  graph(data)
+  graph(data, sys.argv[2])
 
 if __name__ == "__main__":
   main()
