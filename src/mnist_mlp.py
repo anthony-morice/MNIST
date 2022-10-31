@@ -56,7 +56,7 @@ def evaluate_MLP(dataloader, model, loss_fn):
 def load_data():
   # Download training data from open datasets.
   training_data = datasets.MNIST(
-      root="dataset",
+      root="../dataset",
       train=True,
       download=True,
       transform=ToTensor())
@@ -66,7 +66,7 @@ def load_data():
       [training_size, validation_size])
   # Download test data from open datasets.
   test_data = datasets.MNIST(
-      root="dataset",
+      root="../dataset",
       train=False,
       download=True,
       transform=ToTensor())
