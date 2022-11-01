@@ -213,7 +213,7 @@ std::pair<std::vector<float>, std::vector<float>> MLP::fit(Mnist& mnist, int
         no_improvement = 0;
       } // if
       batch = validation_correct = validation_total = 0;
-      lr *= dr; // update learning rate
+      // lr *= dr; // update learning rate
       std::cout << "\n\nEpochs Remaining: " << n_epochs << std::endl;
       std::cout << "  new lr: " << lr 
                 << ", validation: " << *validation_accuracies.rbegin()

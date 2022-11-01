@@ -23,21 +23,21 @@ class MLP {
     std::vector<int> predict_mnist(Mnist& mnist) const;
     void save_weights(std::string file) const;
     void load_weights(std::string file);
-
-  private:
-    vec2df w1;
-    vec2df b1;
-    vec2df w2;
-    vec2df b2;
-    int predict(const vec2df& x) const;
-    void load_training_data(std::vector<std::vector<std::pair<vec2df,vec2df>>>& v, 
-        Mnist& mnist, int batch_size);
     static vec2df fc(const vec2df& x, const vec2df& w, const vec2df& b);
     static std::tuple<vec2df, vec2df, vec2df> fc_backward(const vec2df& dl_dy,
         const vec2df& x, const vec2df& w, const vec2df& b, const vec2df& y);
     static vec2df relu(const vec2df& x);
     static vec2df relu_backward(const vec2df& dl_dy, const vec2df& x, const vec2df& y);
     static std::pair<float, vec2df> loss_cross_entropy_softmax(const vec2df& x, const vec2df& y);
+    int predict(const vec2df& x) const;
+
+  private:
+    vec2df w1;
+    vec2df b1;
+    vec2df w2;
+    vec2df b2;
+    void load_training_data(std::vector<std::vector<std::pair<vec2df,vec2df>>>& v, 
+        Mnist& mnist, int batch_size);
 };
 
 #endif // MLP_H_

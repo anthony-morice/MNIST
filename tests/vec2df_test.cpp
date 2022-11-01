@@ -4,7 +4,7 @@
 
 class Vec2dfTest : public ::testing::Test {
   public: 
-    void SetUp() {
+    void SetUp() override {
       v0 = vec2df();     // 1 x 1
       v1 = vec2df(10);   // 10 x 1
       v2 = vec2df(4,5);  // 4 x 5
