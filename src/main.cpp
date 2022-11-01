@@ -40,6 +40,7 @@ int main(int argc, char** argv) {
   while (true) {
     std::vector<std::pair<int,int>> prediction_results;
     std::cout << "Making predictions...";
+    std::cout.flush();
     for (int i = 0; i < data.num_images; i++)
       prediction_results.push_back({mlp->predict(data.get_image(i)), data.get_label(i)});
     std::cout << "DONE" << std::endl;

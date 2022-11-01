@@ -19,17 +19,17 @@ class MLP {
     MLP(std::string weight_file);
     std::pair<std::vector<float>, std::vector<float>> fit(Mnist& mnist, int n_epochs = 100, 
         int batch_size = 32, float lr = 0.7, float dr = 0.98);
-    int predict(const cv::Mat& img) const;
-    std::vector<int> predict_mnist(Mnist& mnist) const;
+    int predict(const cv::Mat& img);
+    std::vector<int> predict_mnist(Mnist& mnist);
     void save_weights(std::string file) const;
     void load_weights(std::string file);
-    static vec2df fc(const vec2df& x, const vec2df& w, const vec2df& b);
-    static std::tuple<vec2df, vec2df, vec2df> fc_backward(const vec2df& dl_dy,
+    static vec2df fc(const vec2df& x, vec2df& w, const vec2df& b);
+    static std::tuple<vec2df, vec2df, vec2df> fc_backward(vec2df& dl_dy,
         const vec2df& x, const vec2df& w, const vec2df& b, const vec2df& y);
     static vec2df relu(const vec2df& x);
     static vec2df relu_backward(const vec2df& dl_dy, const vec2df& x, const vec2df& y);
     static std::pair<float, vec2df> loss_cross_entropy_softmax(const vec2df& x, const vec2df& y);
-    int predict(const vec2df& x) const;
+    int predict(const vec2df& x);
 
   private:
     vec2df w1;

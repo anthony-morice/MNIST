@@ -11,6 +11,7 @@ vec2df::vec2df(int nrow, int ncol) {
   this->shape = {nrow, ncol};
   this->size = nrow * ncol;
   this->data = new float[this->size];
+  this->transposed = false;
 } // vec2df(int, int)
 
 vec2df::vec2df(std::pair<int, int> shape) : vec2df(shape.first, shape.second) {}
@@ -21,6 +22,7 @@ vec2df::vec2df(int size, float* data) {
   this->data = new float[this->size];
   for (int i = 0; i < this->size; i++)
     this->data[i] = data[i];
+  this->transposed = false;
 } // vec2df(int, float*)
 
 vec2df::vec2df(std::vector<int> v) {
@@ -29,6 +31,7 @@ vec2df::vec2df(std::vector<int> v) {
   this->data = new float[this->size];
   for (int i = 0; i < this->size; i++)
     this->data[i] = (float) v[i];
+  this->transposed = false;
 } // vec2df()
 
 vec2df::vec2df(const vec2df& other) {
@@ -37,6 +40,7 @@ vec2df::vec2df(const vec2df& other) {
   this->data = new float[this->size];
   for (int i = 0; i < this->size; i++)
     this->data[i] = other.data[i];
+  this->transposed = other.transposed;
 } // vec2df() copy constructor
 
 vec2df& vec2df::operator=(const vec2df& other) {
@@ -46,6 +50,7 @@ vec2df& vec2df::operator=(const vec2df& other) {
   this->data = new float[this->size];
   for (int i = 0; i < this->size; i++)
     this->data[i] = other.data[i];
+  this->transposed = other.transposed;
   return *this;
 } // copy assignment operator
 
@@ -123,6 +128,11 @@ vec2df vec2df::transpose() const {
   } // for i
   return res;
 } // transpose()
+
+vec2df& vec2df::transpose_inplace() {
+  this->transposed = !this->transposed;
+  return *this;
+} // transpose_inplace()
 
 void vec2df::gaussian_fill(float mean, float std) {
   unsigned seed = std::chrono::steady_clock::now().time_since_epoch().count();
@@ -247,6 +257,31 @@ vec2df vec2df::operator/(const vec2df& rhs) const {
 } // operator*()
 
 vec2df vec2df::operator*(const vec2df& rhs) const {
+  if (this->transposed || rhs.transposed) {
+    int first = this->shape.second, second = rhs.shape.first;
+    int rows_c = this->shape.first, columns_c = rhs.shape.second;
+    if (this->transposed) {
+      rows_c = first;
+      first = this->shape.first;
+    } // if
+    if (rhs.transposed) {
+      columns_c = second;
+      second = rhs.shape.second;
+    } // if
+    assert(first == second);
+    int columns_a = this->shape.second;
+    int columns_b = rhs.shape.second;
+    vec2df res(rows_c, columns_c);
+    float* a = this->data;
+    float* b = rhs.data;
+    float* c = res.data;
+    enum CBLAS_TRANSPOSE cblas_transa = this->transposed ? CblasTrans: CblasNoTrans;
+    enum CBLAS_TRANSPOSE cblas_transb = rhs.transposed ? CblasTrans: CblasNoTrans;
+    cblas_sgemm(CblasRowMajor, cblas_transa, cblas_transb,
+                rows_c, columns_c, columns_a, 1.0,
+                a, columns_a, b, columns_b, 0.0, c, columns_c);
+    return res;
+  } // if
   assert(this->shape.second == rhs.shape.first);
   int columns_a = this->shape.second;
   int columns_b = rhs.shape.second;

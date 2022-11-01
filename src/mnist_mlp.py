@@ -96,6 +96,7 @@ if __name__ == "__main__":
       best_accuracy = max(accuracy, best_accuracy)
       if (count > 3):
         break
+  breakpoint()
   accuracy = evaluate_MLP(test_dataloader, model, loss_fn)
   print(f"\nTest set accuracy of trained model: {accuracy}")
   torch.save(model.state_dict(), "model_10-31-1339.pth")

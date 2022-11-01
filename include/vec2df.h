@@ -20,6 +20,7 @@ class vec2df {
     const std::pair<int, int>& get_shape() const;
     void print() const;
     vec2df transpose() const;
+    vec2df& transpose_inplace();
     float get(int i, int j) const;
     float get(int i) const;
     float& at(int i, int j) const;
@@ -44,6 +45,7 @@ class vec2df {
     bool operator==(const vec2df& rhs) const;
     float* data;
     int size;
+    bool transposed;
     std::pair<int, int> shape;
 };
 
