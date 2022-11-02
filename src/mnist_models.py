@@ -24,7 +24,20 @@ class MLP(nn.Module):
     x = self.flatten(x)
     return self.model(x)
 
-def train_MLP(dataloader, model, loss_fn, optimizer):
+class CNN(nn.Module):
+  def __init__(self):
+    super().__init__()
+    self.model = nn.Sequential(
+        nn.Conv2d(in_channels=1, out_channels=3, kernel_size=3, padding='same'),
+        nn.ReLU(),
+        nn.MaxPool2d(kernel_size=2),
+        nn.Flatten(),
+        nn.Linear(14*14*3,10)) # (28//2)^2 * 3
+
+  def forward(self, x):
+    return self.model(x)
+
+def train_model(dataloader, model, loss_fn, optimizer):
   model.train()
   for batch, (samples, labels) in enumerate(dataloader):
     samples, labels = samples.to(DEVICE), labels.to(DEVICE)
@@ -40,7 +53,7 @@ def train_MLP(dataloader, model, loss_fn, optimizer):
       sys.stdout.write("\x1b[0G" + f"batch {batch} of {len(dataloader)} -->  loss: {loss.item():>7f}")
       sys.stdout.flush()
 
-def evaluate_MLP(dataloader, model, loss_fn):
+def evaluate_model(dataloader, model, loss_fn):
   loss_sum, n_correct = 0, 0
   with torch.no_grad():
     for samples, labels in dataloader:
@@ -50,7 +63,7 @@ def evaluate_MLP(dataloader, model, loss_fn):
       n_correct += (y_tilde.argmax(1) == labels).type(torch.float).sum().item()
   loss_sum /= len(dataloader)
   n_correct /= len(dataloader.dataset)
-  print(f"\nEvaluation Error: \n  Accuracy -> {(100 * n_correct):>0.1f}%, Avg Loss -> {loss_sum:>8f}\n")
+  print(f"\nEvaluation Results: \n  Accuracy -> {(100 * n_correct):>0.1f}%, Avg Loss -> {loss_sum:>8f}\n")
   return 100 * n_correct
 
 def load_data():
@@ -79,6 +92,7 @@ if __name__ == "__main__":
   training_data, validation_data, test_data = load_data()
   test_dataloader = DataLoader(test_data, batch_size=BATCH_SIZE)
   model = MLP().to(DEVICE)
+  # model = CNN().to(DEVICE)
   loss_fn = nn.CrossEntropyLoss()
   print(model)
   if load:
@@ -90,13 +104,13 @@ if __name__ == "__main__":
     best_accuracy, count = 0, 0
     for t in range(EPOCHS):
       print(f"************ Epoch {t} ************\n")
-      train_MLP(train_dataloader, model, loss_fn, optimizer)
-      accuracy = evaluate_MLP(validation_dataloader, model, loss_fn)
+      train_model(train_dataloader, model, loss_fn, optimizer)
+      accuracy = evaluate_model(validation_dataloader, model, loss_fn)
       count = count + 1 if accuracy <= best_accuracy else 0
       best_accuracy = max(accuracy, best_accuracy)
       if (count > 3):
         break
-  accuracy = evaluate_MLP(test_dataloader, model, loss_fn)
+  accuracy = evaluate_model(test_dataloader, model, loss_fn)
   print(f"\nTest set accuracy of trained model: {accuracy}")
   torch.save(model.state_dict(), "model_10-31-1339.pth")
   print("DONE")
