@@ -204,3 +204,38 @@ TEST_F(MLPTest, MathTests) {
     NEAR_FLOAT_EQ(dl_dx.at(i), val[i], EPS) << "MLP - incorrect dl_dx val at " << i;
 } // MathTests
 
+TEST_F(MLPTest, SmallBackPropTest) {
+  std::vector<float> in1 = {1, 2, 3, 4, 5};
+  std::vector<float> y1 = {0, 1, 0};
+  std::vector<std::vector<float>> w_fc = 
+    {{-0.3139,  0.1732, -0.2063},
+     {-0.0120,  0.0743,  0.2526},
+     { 0.4344, -0.3323, -0.2040},
+     {-0.2966,  0.0645, -0.0329},
+     { 0.0751,  0.3800,  0.2389}};
+  std::vector<float> b_fc = {0.0022, -0.3555, 0.2325};
+  vec2df in(in1);
+  vec2df y(y1);
+  vec2df w(5, 3);
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 3; j++) {
+      w.at(i, j) = w_fc[i][j];
+    } // for
+  } // for
+  vec2df b(b_fc);
+  vec2df a1 = MLP::fc(in, w, b);
+  vec2df f1 = MLP::relu(a1);
+  auto [y_tilde, dl_dy] = MLP::loss_cross_entropy_softmax(f1, y);
+  vec2df dl_da1 = MLP::relu_backward(dl_dy, a1, f1);
+  auto [dl_dx, dl_dw1, dl_db1] = MLP::fc_backward(dl_da1, in, w, b, a1);
+  std::cout << "dl_dy:" << std::endl;
+  dl_dy.print();
+  std::cout << "dl_da1:" << std::endl;
+  dl_da1.print();
+  std::cout << "dl_dw1:" << std::endl;
+  dl_dw1.print();
+  std::cout << "dl_db1:" << std::endl;
+  dl_db1.print();
+  std::cout << "dl_dx:" << std::endl;
+  dl_dx.print();
+} // SmallBackPropTest 

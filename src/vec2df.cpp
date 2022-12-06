@@ -31,6 +31,14 @@ vec2df::vec2df(std::vector<int> v) {
     this->data[i] = (float) v[i];
 } // vec2df()
 
+vec2df::vec2df(std::vector<float> v) {
+  this->shape = {1, v.size()};
+  this->size = v.size();
+  this->data = new float[this->size];
+  for (int i = 0; i < this->size; i++)
+    this->data[i] = v[i];
+} // vec2df()
+
 vec2df::vec2df(const vec2df& other) {
   this->shape = other.shape;
   this->size = other.size;
@@ -157,6 +165,17 @@ vec2df vec2df::clip_max(const vec2df& a, float max_val) {
   } // for
   return res;
 } // clip_max()
+
+vec2df vec2df::scaled_unit_step(const vec2df& a, float k) {
+  vec2df res(a.shape);
+  for (int i = 0; i < res.size; i++) {
+    if (a.data[i] > 0)
+      res.data[i] = k;
+    else
+      res.data[i] = 0;
+  } // for
+  return res;
+} // scaled_unit_step()
 
 vec2df& vec2df::scale(float f) {
   for (int i = 0; i < this->size; i++)

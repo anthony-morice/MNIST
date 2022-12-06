@@ -46,7 +46,7 @@ vec2df MLP::relu(const vec2df& x) {
 } // relu()
 
 vec2df MLP::relu_backward(const vec2df& dl_dy, const vec2df& x, const vec2df& y) {
-  return vec2df::element_multiply(dl_dy, vec2df::clip_max(y, 1)); 
+  return vec2df::element_multiply(dl_dy, vec2df::scaled_unit_step(y, 1)); 
 } // relu_backward()
 
 std::pair<float, vec2df> MLP::loss_cross_entropy_softmax(const vec2df& x, const vec2df& y) {
