@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
     std::cin >> epochs;
     std::cout << "Learning rate? (0,1.0] ";
     std::cin >> lr;
-    std::cout << "Decay rate? (0,1.0) ";
+    std::cout << "Decay rate? (0,1.0] ";
     std::cin >> dr;
     auto[losses, validation_accuracies] = mlp->fit(data, epochs, 32, lr, dr);
     mlp->save_weights("../results/mlp_weights.xml");
