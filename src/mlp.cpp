@@ -166,7 +166,8 @@ std::pair<std::vector<float>, std::vector<float>> MLP::fit(Mnist& mnist, int
           vec2df f1 = relu(a1);
           vec2df y_tilde = fc(f1, this->w2, this->b2); // prediction
           auto [loss, dl_dy] = loss_cross_entropy_softmax(y_tilde, y);
-          loss_sum += loss;
+          loss_sum += loss; 
+          dl_dy.scale(1.0 / mini_batch.size());
           // backpropagation
           auto [dl_df1, dl_dw2, dl_db2] = fc_backward(dl_dy, f1, w2, b2, y);
           vec2df dl_da1 = relu_backward(dl_df1, a1, f1);
@@ -186,10 +187,10 @@ std::pair<std::vector<float>, std::vector<float>> MLP::fit(Mnist& mnist, int
         } // omp critical
       } // omp parallel
       // update weights
-      this->w1 -= dL_dw1.scale(lr / mini_batch.size()).transpose();
-      this->b1 -= dL_db1.scale(lr / mini_batch.size());
-      this->w2 -= dL_dw2.scale(lr / mini_batch.size()).transpose();
-      this->b2 -= dL_db2.scale(lr / mini_batch.size());
+      this->w1 -= dL_dw1.scale(lr).transpose();
+      this->b1 -= dL_db1.scale(lr);
+      this->w2 -= dL_dw2.scale(lr).transpose();
+      this->b2 -= dL_db2.scale(lr);
       losses.push_back(float(loss_sum / mini_batch.size()));
       std::cout << "\x1b[0G" << "Batch Loss: " << *losses.rbegin();
       std::cout.flush();
@@ -213,12 +214,12 @@ std::pair<std::vector<float>, std::vector<float>> MLP::fit(Mnist& mnist, int
         no_improvement = 0;
       } // if
       batch = validation_correct = validation_total = 0;
-      // lr *= dr; // update learning rate
+      lr *= dr; // update learning rate
+      n_epochs--;
       std::cout << "\n\nEpochs Remaining: " << n_epochs << std::endl;
       std::cout << "  new lr: " << lr 
                 << ", validation: " << *validation_accuracies.rbegin()
                 << ", best: " << best_validation << std::endl << std::endl;
-      n_epochs--;
     } // else
   } // while n_epochs 
   this->load_weights("training_cache.xml");
